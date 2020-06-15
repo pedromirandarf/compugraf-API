@@ -4,12 +4,57 @@ const req = require('request');
 const request = require('request-promise');
 require('dotenv').config()
 const Chave = process.env.ACKEY;
+var DataExtended =[];
+
+let domainTrim = async(dominio) =>{
+
+    let dominioC = String(dominio);
+    if(dominioC.includes("www")){
+    	let ar = dominioC.split(".");
+      dominioC = (ar[0] === 'www')  ? ar[1] : ar[0];
+    	dominioC = (ar[1] === 'com')  ? ar[0] : ar[1];
+      console.log(dominioC);
+    }
+    if(dominioC.includes("https")||dominioC.includes("http")){
+    	let ar = dominioC.split('//');
+    	dominioC = (ar[0].includes("https")||dominioC.includes("http"))  ? ar[1] : ar[0];
+        ar = dominioC.split(".");
+        dominioC = (ar[0].includes("www"))  ? ar[1] : ar[0];
+ 		//dominioC = (ar[1].includes("com"))  ? ar[0] : ar[1];
+    }
+    console.log(dominioC);
+    return dominioC;
+};
+
+
+async function extendData(allData){
+    console.log("ExtendData");
+    console.log(allData["accounts"].length);
+    console.log(allData["accounts"][2]["name"]);
+    for(let j=0;j<allData["accounts"].length; j++){
+        if(allData["accounts"][j]["name"]!==null && allData["accounts"][j]["accountUrl"] !== null && allData["accounts"][j]["accountUrl"] !== ""){
+            if(allData["accounts"][j]["accountUrl"] !== undefined){
+                let Dominio= await domainTrim(allData["accounts"][j]["accountUrl"]);
+                 console.log(`Push ${DataExtended.length}`);
+                 DataExtended.push({
+                    Empresa: allData["accounts"][j]["name"],
+                    Dominio: Dominio
+                 });
+            }
+            
+        }
+    }
+
+};
+
+
+
 
 let colect_data = async (req,res)=>{
     let account_data = [];
 
     console.log("Inciando coleta de dados");
-    var endpoint = "/api/3/accounts?limit=100&offset=100";
+    var endpoint = "/api/3/accounts?limit=100";
     
     var allData = await request({
         method: 'GET',
@@ -19,13 +64,38 @@ let colect_data = async (req,res)=>{
         },
         json: true
     });
-    //const dataSize = allData["meta"]["total"];
-    
+    var dataSize = parseInt(allData["meta"]["total"]);
+    dataSize = parseInt((dataSize+6)/100);
+   
+    for(let i=1; i<dataSize; i++){
+        console.log(i);
+       if(allData["accounts"].length == 0){
+           console.log("OK");
+           break;
+        }
+       let offset;
+        offset = i*100;
+        endpoint = `/api/3/accounts?limit=100&offset=${offset}`;
+        allData = await request({
+            method: 'GET',
+            url: `https://compugraf55051.api-us1.com${endpoint}`,
+            headers:{
+                "Api-Token": Chave
+            },
+            json: true
+        });
+
+       await extendData(allData);
+
+
+    }   
+   
+
     
     //console.log(allData);
     account_data = allData;
 
-    return account_data;
+    return DataExtended;
 };
 
 
@@ -41,10 +111,11 @@ router.get('/account', async(req,res)=>{
     try{
         const accounts = await colect_data();
         return res.send({
-            message: "Tudo certo",
+            message: `Foram coletados ${accounts.length} de Accounts Válidas`,
             Data: accounts
         });
     }catch(err){
+        console.log(err);
         return res.status(400).send({error: err})
     }
 });
