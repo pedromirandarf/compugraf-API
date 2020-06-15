@@ -3,6 +3,7 @@ const router = express.Router();
 const req = require('request');
 const request = require('request-promise');
 require('dotenv').config()
+const knex = require('../database');
 const Chave = process.env.ACKEY;
 var DataExtended =[];
 
@@ -47,7 +48,12 @@ async function extendData(allData){
 
 };
 
-
+let insertBD= async(accounts) =>{
+    console.log("Inserindo no BD");
+    await knex('accounts').truncate();
+    await knex('accounts').insert(accounts);
+    DataExtended =[];
+}
 
 
 let colect_data = async (req,res)=>{
@@ -109,7 +115,27 @@ let colect_data = async (req,res)=>{
 router.get('/account', async(req,res)=>{
     try{
         const accounts = await colect_data();
-        DataExtended =[];
+        await insertBD(accounts);
+        
+        return res.send({
+            message: `Foram coletados ${accounts.length} de Accounts Válidas`,
+            Data: accounts
+        });
+    }catch(err){
+        console.log(err);
+        return res.status(400).send({error: err})
+    }
+});
+
+
+
+router.get('/account/bd', async(req,res)=>{
+    try{
+        let dom = req.query.id; 
+        const accounts = await knex('accounts')
+        .where('Dominio',dom)
+        .select();
+        
         return res.send({
             message: `Foram coletados ${accounts.length} de Accounts Válidas`,
             Data: accounts
