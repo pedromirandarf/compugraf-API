@@ -93,8 +93,7 @@ let colect_data = async (req,res)=>{
 
     
     //console.log(allData);
-    account_data = allData;
-
+    
     return DataExtended;
 };
 
@@ -110,6 +109,7 @@ let colect_data = async (req,res)=>{
 router.get('/account', async(req,res)=>{
     try{
         const accounts = await colect_data();
+        DataExtended =[];
         return res.send({
             message: `Foram coletados ${accounts.length} de Accounts Válidas`,
             Data: accounts
