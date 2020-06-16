@@ -3,7 +3,7 @@ const router = express.Router();
 const req = require('request');
 const request = require('request-promise');
 require('dotenv').config()
-//const knex = require('../database');
+const knex = require('../database');
 const e = require('express');
 const Chave = process.env.ACKEY;
 var DataExtended =[];
@@ -51,8 +51,8 @@ async function extendData(allData){
 
 let insertBD= async(accounts) =>{
     console.log("Inserindo no BD");
-   // await knex('accounts').truncate();
-   // await knex('accounts').insert(accounts);
+   await knex('accounts').truncate();
+   await knex('accounts').insert(accounts);
     DataExtended =[];
 }
 
@@ -133,9 +133,9 @@ router.get('/account', async(req,res)=>{
 router.get('/account/bd', async(req,res)=>{
     try{
         let dom = req.query.id; 
-        //const accounts = await knex('accounts')
-      //  .where('Dominio',dom)
-        //.select();
+        var accounts = await knex('accounts')
+        .where('Dominio',dom)
+        .select();
         
         return res.send({
             message: `Foram coletados ${accounts.length} de Accounts Válidas`,
